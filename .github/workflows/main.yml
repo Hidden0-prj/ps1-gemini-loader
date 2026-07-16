@@ -11,34 +11,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Download YOUR repository (which just contains main.c)
+      # 1. Download YOUR repository
       - name: Checkout Your Code
         uses: actions/checkout@v4
         with:
           path: my_code
 
-      # 2. Download the official ps1-bare-metal SDK in the background
+      # 2. Download the official ps1-bare-metal SDK
       - name: Checkout ps1-bare-metal SDK
         uses: actions/checkout@v4
         with:
           repository: spicyjpeg/ps1-bare-metal
           path: sdk
 
-      # 3. Install the MIPS C compiler AND C++ compiler
+      # 3. Install the MIPS toolchain AND Python venv tools
       - name: Install Toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mipsel-linux-gnu g++-mipsel-linux-gnu cmake ninja-build
+          sudo apt-get install -y gcc-mipsel-linux-gnu g++-mipsel-linux-gnu cmake ninja-build python3 python3-venv
 
-      # 4. Inject your main.c into the SDK so it compiles perfectly
+      # 4. Inject your main.c into the SDK
       - name: Inject Your Code into the SDK
         run: |
-          # Delete the default helloWorld example included in the SDK
           rm sdk/src/00_helloWorld/main.c
-          # Replace it with YOUR main.c file
           cp my_code/main.c sdk/src/00_helloWorld/main.c
 
-      # 5. Configure CMake inside the SDK folder
+      # 5. Setup the Python Virtual Environment for the SDK
+      - name: Setup SDK Python Environment
+        run: |
+          cd sdk
+          # Create the virtual environment the SDK is looking for
+          python3 -m venv env
+          # Install the SDK's internal build tools
+          env/bin/pip install -r requirements.txt
+
+      # 6. Configure CMake
       - name: Configure CMake
         run: |
           cd sdk
@@ -46,13 +53,13 @@ jobs:
             -DCMAKE_C_COMPILER=mipsel-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=mipsel-linux-gnu-g++
 
-      # 6. Compile the code
+      # 7. Compile the code
       - name: Build Executable
         run: |
           cd sdk
           cmake --build build/release
 
-      # 7. Upload the finished .psexe file to your GitHub Actions tab
+      # 8. Upload the finished .psexe file
       - name: Upload PS1 Executable
         uses: actions/upload-artifact@v4
         with:
