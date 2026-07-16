@@ -30,7 +30,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-mipsel-linux-gnu g++-mipsel-linux-gnu cmake ninja-build python3 python3-venv
 
-      # 4. Inject your main.c into the SDK
+      # 4. Inject your main.c into the SDK (The Trojan Horse)
       - name: Inject Your Code into the SDK
         run: |
           rm sdk/src/00_helloWorld/main.c
@@ -43,7 +43,7 @@ jobs:
           python3 -m venv env
           env/bin/pip install -r tools/requirements.txt
 
-      # 6. Configure CMake (This creates the 'build' folder)
+      # 6. Configure CMake
       - name: Configure CMake
         run: |
           cd sdk
@@ -51,15 +51,22 @@ jobs:
             -DCMAKE_C_COMPILER=mipsel-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=mipsel-linux-gnu-g++
 
-      # 7. THE FIX: Just tell CMake to build the directory it created
+      # 7. Build the Executables
       - name: Build Executable
         run: |
           cd sdk
           cmake --build build
 
-      # 8. Upload the finished .psexe file
+      # 8. THE FIX: Isolate and Rename Your Code
+      - name: Package Final Build
+        run: |
+          mkdir -p final_build
+          # Grab the file that contains your injected code and rename it
+          cp sdk/build/example00_helloWorld.psexe final_build/gemini_loader.psexe
+
+      # 9. Upload ONLY your finished .psexe file
       - name: Upload PS1 Executable
         uses: actions/upload-artifact@v4
         with:
           name: Gemini-Loader-Build
-          path: sdk/build/**/*.psexe
+          path: final_build/gemini_loader.psexe
