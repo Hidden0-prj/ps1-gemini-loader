@@ -3,8 +3,6 @@ name: Compile PS1 Bare-Metal App
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -13,31 +11,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Grab your code from the repository
-      - name: Checkout Repository
+      # 1. Download YOUR repository (which just contains main.c)
+      - name: Checkout Your Code
         uses: actions/checkout@v4
+        with:
+          path: my_code
 
-      # 2. Install only the compiler and building tools (No Python/Pillow needed)
-      - name: Install Toolchain and Dependencies
+      # 2. Download the official ps1-bare-metal SDK in the background
+      - name: Checkout ps1-bare-metal SDK
+        uses: actions/checkout@v4
+        with:
+          repository: spicyjpeg/ps1-bare-metal
+          path: sdk
+
+      # 3. Install the MIPS compiler
+      - name: Install Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mipsel-linux-gnu cmake ninja-build
 
-      # 3. Configure the build system using CMake
+      # 4. Inject your main.c into the SDK so it compiles perfectly
+      - name: Inject Your Code into the SDK
+        run: |
+          # Delete the default helloWorld example included in the SDK
+          rm sdk/src/00_helloWorld/main.c
+          # Replace it with YOUR main.c file
+          cp my_code/main.c sdk/src/00_helloWorld/main.c
+
+      # 5. Configure CMake inside the SDK folder
       - name: Configure CMake
         run: |
+          cd sdk
           cmake --preset release \
             -DCMAKE_C_COMPILER=mipsel-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=mipsel-linux-gnu-g++
 
-      # 4. Compile the C/ASM code into a PS1 executable
+      # 6. Compile the code
       - name: Build Executable
         run: |
+          cd sdk
           cmake --build build/release
 
-      # 5. Gather the compiled files and upload them as a downloadable ZIP
-      - name: Upload PS1 Executable (.psexe)
+      # 7. Upload the finished .psexe file to your GitHub Actions tab
+      - name: Upload PS1 Executable
         uses: actions/upload-artifact@v4
         with:
-          name: PS1-Compiled-Build
-          path: build/release/**/*.psexe
+          name: Gemini-Loader-Build
+          path: sdk/build/release/src/00_helloWorld/*.psexe
