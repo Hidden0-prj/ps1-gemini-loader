@@ -35,7 +35,9 @@ void cd_send_secret_cmd(unsigned char cmd, const char* params, int param_len) {
     CDREG0 = 1; 
     // Bit 5: 1 = Response FIFO is NOT empty (0 = Empty)
     while (CDREG0 & 0x20) { 
-        volatile unsigned char dummy = CDREG1; // Read and discard the response byte
+        // Read and discard the response byte. 
+        // (Casting to void silences the "unused variable" warning in GCC)
+        (void)CDREG1; 
     }
     
     // 5. Acknowledge (clear) the interrupt
@@ -46,28 +48,36 @@ void cd_send_secret_cmd(unsigned char cmd, const char* params, int param_len) {
 // The main unlock routine
 // Pass 1 for PAL (Europe) consoles, 0 for NTSC-U (American) consoles
 void unlock_cdrom_drive(int is_pal) {
-    // Sequence 1: Init
     cd_send_secret_cmd(0x50, 0, 0);
-    
-    // Sequence 2: "Licensed by" (11 bytes)
     cd_send_secret_cmd(0x51, "Licensed by", 11);
-    
-    // Sequence 3: "Sony" (4 bytes)
     cd_send_secret_cmd(0x52, "Sony", 4);
-    
-    // Sequence 4: "Computer" (8 bytes)
     cd_send_secret_cmd(0x53, "Computer", 8);
-    
-    // Sequence 5: "Entertainment" (13 bytes)
     cd_send_secret_cmd(0x54, "Entertainment", 13);
     
-    // Sequence 6: Region string
     if (is_pal) {
         cd_send_secret_cmd(0x55, "(Europe)", 8);
     } else {
         cd_send_secret_cmd(0x55, "of America", 10);
     }
     
-    // Sequence 7: Finalize
     cd_send_secret_cmd(0x56, 0, 0);
+}
+
+// THIS IS WHAT WAS MISSING: The main entry point
+int main() {
+    
+    // Send the unlock sequence. 
+    // Change to 1 if you are targeting PAL consoles.
+    unlock_cdrom_drive(0);
+    
+    // In a full app, you would now send commands to read the TOC
+    // and load the burned disc's SYSTEM.CNF here.
+    
+    // On bare metal, returning from main() causes a crash. 
+    // We trap the CPU in an infinite loop when finished.
+    while(1) {
+        // Do nothing forever
+    }
+    
+    return 0;
 }
