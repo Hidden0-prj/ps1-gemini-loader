@@ -40,9 +40,7 @@ jobs:
       - name: Setup SDK Python Environment
         run: |
           cd sdk
-          # Create the virtual environment
           python3 -m venv env
-          # THE FIX: Point to the tools/ directory!
           env/bin/pip install -r tools/requirements.txt
 
       # 6. Configure CMake
@@ -53,15 +51,16 @@ jobs:
             -DCMAKE_C_COMPILER=mipsel-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=mipsel-linux-gnu-g++
 
-      # 7. Compile the code
+      # 7. THE FIX: Tell CMake to build the correct directory
       - name: Build Executable
         run: |
           cd sdk
-          cmake --build build/release
+          # Using the preset flag automatically targets the correct directory
+          cmake --build --preset release
 
-      # 8. Upload the finished .psexe file
+      # 8. THE FIX: Use a wildcard (**) to absolutely guarantee we find the .psexe
       - name: Upload PS1 Executable
         uses: actions/upload-artifact@v4
         with:
           name: Gemini-Loader-Build
-          path: sdk/build/release/src/00_helloWorld/*.psexe
+          path: sdk/build/**/*.psexe
