@@ -24,11 +24,11 @@ jobs:
           repository: spicyjpeg/ps1-bare-metal
           path: sdk
 
-      # 3. Install the MIPS compiler
+      # 3. Install the MIPS C compiler AND C++ compiler
       - name: Install Toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mipsel-linux-gnu cmake ninja-build
+          sudo apt-get install -y gcc-mipsel-linux-gnu g++-mipsel-linux-gnu cmake ninja-build
 
       # 4. Inject your main.c into the SDK so it compiles perfectly
       - name: Inject Your Code into the SDK
