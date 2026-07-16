@@ -40,10 +40,10 @@ jobs:
       - name: Setup SDK Python Environment
         run: |
           cd sdk
-          # Create the virtual environment the SDK is looking for
+          # Create the virtual environment
           python3 -m venv env
-          # Install the SDK's internal build tools
-          env/bin/pip install -r requirements.txt
+          # THE FIX: Point to the tools/ directory!
+          env/bin/pip install -r tools/requirements.txt
 
       # 6. Configure CMake
       - name: Configure CMake
