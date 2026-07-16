@@ -1,0 +1,63 @@
+name: Compile PS1 Bare-Metal Demo
+
+# This tells GitHub to run the compiler every time you push to the repository
+# or manually click the "Run workflow" button in the Actions tab.
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build PS1 Executable
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Grab your code from the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Install the MIPS compiler, CMake, Ninja, and Python dependencies
+      # We use the standard Ubuntu mipsel-linux-gnu-gcc which is fully 
+      # compatible with the ps1-bare-metal codebase.
+      - name: Install Toolchain and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mipsel-linux-gnu cmake ninja-build python3 python3-pip python3-pil
+          pip3 install --quiet pillow
+
+      # 3. Convert your assets into C headers using your Python tools
+      - name: Convert 3D Model and Textures
+        run: |
+          # Ensure the source directory exists before generating headers
+          mkdir -p src
+          
+          # Convert the OBJ and PNG files
+          # Note: Adjust these paths if your folders are named differently
+          python3 tools/obj_to_c.py assets/model.obj src/model_data.h
+          python3 tools/png_to_c.py assets/PSOne_ON.png src/texture_data.h
+
+      # 4. Configure the build system using CMake
+      - name: Configure CMake
+        run: |
+          # The ps1-bare-metal SDK provides presets. We will use the release preset
+          # and force it to use the Ubuntu MIPS compiler we just installed.
+          cmake --preset release \
+            -DCMAKE_C_COMPILER=mipsel-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=mipsel-linux-gnu-g++
+
+      # 5. Compile the C code into a PS1 executable
+      - name: Build Executable
+        run: |
+          cmake --build build/release
+
+      # 6. Gather the compiled files and upload them as a downloadable ZIP
+      - name: Upload PS1 Executable (.psexe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PS1-Compiled-Build
+          # This grabs all .psexe files from the build folder. 
+          # If your specific project outputs to a different folder, update this path.
+          path: build/release/**/*.psexe
