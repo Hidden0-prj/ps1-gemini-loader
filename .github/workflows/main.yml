@@ -43,7 +43,7 @@ jobs:
           python3 -m venv env
           env/bin/pip install -r tools/requirements.txt
 
-      # 6. Configure CMake
+      # 6. Configure CMake (This creates the 'build' folder)
       - name: Configure CMake
         run: |
           cd sdk
@@ -51,14 +51,13 @@ jobs:
             -DCMAKE_C_COMPILER=mipsel-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=mipsel-linux-gnu-g++
 
-      # 7. THE FIX: Tell CMake to build the correct directory
+      # 7. THE FIX: Just tell CMake to build the directory it created
       - name: Build Executable
         run: |
           cd sdk
-          # Using the preset flag automatically targets the correct directory
-          cmake --build --preset release
+          cmake --build build
 
-      # 8. THE FIX: Use a wildcard (**) to absolutely guarantee we find the .psexe
+      # 8. Upload the finished .psexe file
       - name: Upload PS1 Executable
         uses: actions/upload-artifact@v4
         with:
